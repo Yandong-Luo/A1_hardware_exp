@@ -44,7 +44,10 @@ void Custom::RobotControl()
     motiontime += 2;
     udp.GetRecv(state);
 
-    // printf("%f %f %f %f %f\n", state.imu.rpy[1], state.imu.rpy[2], state.position[0], state.position[1], state.velocity[0]);
+    // printf()
+    std::cout << "Controller Version: "
+                  << state.commVersion << std::endl;
+    printf("%f %f %f %f %f\n", state.imu.rpy[1], state.imu.rpy[2], state.position[0], state.position[1], state.velocity[0]);
 
     cmd.mode = 0;
     cmd.gaitType = 0;
@@ -127,7 +130,7 @@ void Custom::RobotControl()
     if(motiontime>24000 ){
         cmd.mode = 1;
     }
-
+    // std::cout<<"hihihihi"<<std::endl;
     udp.SetSend(cmd);
 }
 
@@ -149,6 +152,7 @@ int main(void)
     loop_control.start();
 
     while(1){
+        
         sleep(10);
     };
 

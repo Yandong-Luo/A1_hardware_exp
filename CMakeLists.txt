@@ -54,4 +54,4 @@ target_link_libraries(lcm_server ${EXTRA_LIBS})
 
 # A1 hardware
 add_executable(A1_waypoint_follower A1_exp/A1_pid.cpp)
-target_link_libraries(A1_waypoint_follower zmq ${EXTRA_LIBS})
+target_link_libraries(A1_waypoint_follower zmq ${EIGEN3_LIBRARIES} ${EXTRA_LIBS})

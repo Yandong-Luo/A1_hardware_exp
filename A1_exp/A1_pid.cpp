@@ -13,10 +13,17 @@
 #include <netinet/in.h>
 #include <thread>
 #include <Eigen/Dense>
+#include <zmq.hpp>
 #include <nlohmann/json.hpp>
 #define DEBUG_MODE true
 using json = nlohmann::json;
 using namespace UNITREE_LEGGED_SDK;
+
+template <typename T>
+T clamp(T val, T low, T high) {
+    return std::max(low, std::min(val, high));
+}
+
 
 // ##########################################################################################
 // ####################################### PID Controller ###################################
@@ -143,7 +150,7 @@ public:
         
         // I term (with anti-windup)
         error_sum_ += error * dt_;
-        error_sum_ = std::clamp(error_sum_, -10.0, 10.0);  // Anti-windup
+        error_sum_ = clamp(error_sum_, -10.0, 10.0);  // Anti-windup
         double i_term = ki_ * error_sum_;
         
         // D term
@@ -155,7 +162,7 @@ public:
         
         // Sum all terms and apply output limits
         double output = p_term + i_term + d_term;
-        return std::clamp(output, min_output_, max_output_);
+        return clamp(output, min_output_, max_output_);
     }
 };
 
@@ -596,6 +603,7 @@ public:
     void updatePoseFromMocap();
     void updateTargetPointFromPlanner();
     void RobotFollower();
+    void setWaypoints();
 
     Safety safe;
     UDP udp;
@@ -611,6 +619,7 @@ public:
 
 	zmq::context_t* zmq_planner_context;
 	zmq::socket_t* zmq_planner_socket;
+    double last_timestamp = 0.0; 
 
     Pose robot_pose;
 	std::vector<Pose> obstacles_pose;
@@ -618,7 +627,7 @@ public:
     Waypoints path;
 };
 
-void Custom::setTargetPoint(double x, double y, double yaw = 0.0) {
+void Custom::setTargetPoint(double x, double y, double yaw) {
     // Add the target point
     goal_position.x() = x;
     goal_position.y() = y;
@@ -627,6 +636,23 @@ void Custom::setTargetPoint(double x, double y, double yaw = 0.0) {
     if(DEBUG_MODE) {
         std::cout << "Set new target point: (" << x << ", " << y << ", " << yaw << ")" << std::endl;
     }
+}
+
+void Custom::setWaypoints(){
+    std::vector<Eigen::Vector3d> waypoint_pos;
+    
+    // Example rectangular path with orientation
+    waypoint_pos.push_back(Eigen::Vector3d(2.0, 0.6, 0));
+    waypoint_pos.push_back(Eigen::Vector3d(4.0, 0.6, 1.57));
+    waypoint_pos.push_back(Eigen::Vector3d(4.0, 1.6, 3.14));
+    waypoint_pos.push_back(Eigen::Vector3d(2.0, 1.6, -1.57));
+    waypoint_pos.push_back(Eigen::Vector3d(2.0, 0.6, 0));
+
+    for(auto waypoint:waypoint_pos){
+        path.addPoint(waypoint.x(), waypoint.y(), waypoint.z());
+    }
+
+    controller.setPath(path);
 }
 
 void Custom::wayppointInterpolation(){
